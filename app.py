@@ -4,27 +4,13 @@ import random
 
 app = Flask(__name__)
 
-def run_generator(script, game_count):
-    results = []
-    for _ in range(game_count):
-        output = subprocess.check_output(["python", script], text=True)
-        numbers_line = output.strip().split(":")[-1]
-        numbers = numbers_line.strip("[] \n").split(", ")
-        numbers = [int(n) for n in numbers if n.isdigit()]
-        results.append(numbers)
-    return results
-
 @app.route("/", methods=["GET", "POST"])
 def index():
-    numbers_list = []
     game_count = 1
+    numbers = []
 
     if request.method == "POST":
-        try:
-            game_count = int(request.form.get("game_count", 1))
-        except:
-            game_count = 1
-
+        game_count = int(request.form.get("game_count", 1))
         action = request.form.get("action")
 
         if action == "generate":
@@ -33,17 +19,15 @@ def index():
                 choice = random.choice(["hybrid_generator.py", "smart_generator.py"])
                 output = subprocess.check_output(["python", choice], text=True)
                 line = output.strip().split(":")[-1]
-                nums = line.strip("[] \n").split(", ")
-                nums = [int(n) for n in nums if n.isdigit()]
-                numbers_list.append(nums)
+                nums = list(map(int, line.strip().split()))
+                numbers.append(nums)
 
-        elif action == "reset":
-            numbers_list = []
-
-    return render_template("index.html", numbers_list=numbers_list, game_count=game_count)
+    return render_template("index.html", numbers=numbers, game_count=game_count)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=10000)
+
 
 
 
